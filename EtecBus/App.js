@@ -157,6 +157,54 @@ function buildLeafletHTML(userCoord, nearestStopId, selectedStopId) {
 
 
 export default function App() {
+  const webViewRef = useRef(null);
+
+  const [userLocation, setUserLocation] = useState(null);
+  const [nearestStop, setNearestStop] = useState(null);
+  const [selectedStop, setSelectedStop] = useState(null);
+  const [locationGranted, setLocationGranted] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async() => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if ( status === 'granted' ) {
+        setLocationGranted(true);
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        const coord = { latitude: loc.coords.latitude, longitude: loc.coords.longitude};
+        setUserLocation(coord);
+
+        let nearest = null, minDist = Infinity;
+        BUS_STOPS.forEach (stop => {
+          const d = getDistance(coord, stop.coordinate);
+          if (d < minDist){ minDist = d; nearest = { ...stop, distance: d };}
+        });
+        setNearestStop(nearest);
+        selectedStop(nearest);
+      }else {
+        setSelectedStop(BUS_STOPS[0]);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  function handleWebViewMenssage(event){
+    try {
+      const msg = JSON.parse(event.nativeEvent.data);
+      if (msg.type === 'SELECT_STOP'){
+        const stop = BUS_STOPS.find(s => s.id === msg.stopId);
+        if(stop){
+          selectedStop(stop);
+          webViewRef.current?.postMenssage(
+            JSON.stringify({ type: 'DRAW_ROUTE', stopId: stop.id })
+          );
+        }
+      }
+    }catch(_){ }
+  }
+
   return (
     <View style={styles.container}>
       <Text>Open up App.js to start working on your app!</Text>
