@@ -205,10 +205,72 @@ export default function App() {
     }catch(_){ }
   }
 
+  function openNavigation(){
+
+  }
+
+  if (loading) {
+
+  }
+
+  const html = buildLeafletHTML(
+    userLocation,
+    nearestStop?.id ?? '',
+    selectedStop?.id ?? ''
+  );
+
   return (
     <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
+      <view style={styles.header}>
+        <text style={styles.headerTitle}>🚌 Ônibus para Escola</text>
+        <text style={styles.headerSub}>{SCHOOL.name}</text>
+      </view>
+          <webview 
+      ref={webViewRef}
+      style={styles.map}
+      originWhitelist={['*']}
+      source={{ html}}
+      onMessage={handleWebViewMenssage}
+      javaScriptEnabled
+      downStoregeEnabled
+      mixedContentMode="always"
+    />
+
+      <TouchableOpacity
+        style={styles.fitButton}
+        onPress={() => webViewRef.current?.postMenssage(
+          JSON.stringify({ type: 'FIT_ALL' }))}
+      >
+        <Text style={styles.fitButtonText}>🌎 Ver Todos</Text>
+      </TouchableOpacity>  
+
+      <View style={styles.painel}>
+          {locationGranted && nearestStop ?(
+            <View style={styles.nearestBanner}>
+              <Text style={styles.nearestlabel}>📍ponto mais próximo de você</Text>
+              <Text style={styles.nearestName}>{nearestStop.name}</Text>
+              <Text style={styles.nearestDist}>{formatDistance(nearestStop.distance)} de distância</Text>
+            </View>
+          ): !locationGranted ? (
+            <View style={styles.noGpsBanner}>
+              <Text style={styles.noGpsText}>📵 GPS Desativado - mostrando todos os pontos</Text>
+            </View>  
+          ):  null}
+    </View>
+
+    { selectedStop && (
+      <View style={styles.selectedCard}>
+        <View style ={{ flex: 1}}>
+          <Text style={styles.selectedName}>{selectedStop.name}</Text>
+          <Text style={styles.selectedLines}>Linhas: {selectedStop.lines.join(' • ')}</Text>
+        </View>  
+        <TouchableOpacity style={styles.navBtn} onPress={openNavigation}>
+          <Text style={styles.navBtnText}>Navegar</Text>
+        </TouchableOpacity>
+      </View>  
+    )}
+          
     </View>
   );
 }
@@ -216,8 +278,17 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#f5f7fa',
   },
+  loading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#555',
+    fontSize: 15,
+  },
+
 });
